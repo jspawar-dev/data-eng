@@ -5,3 +5,7 @@ pip install requests
 
 pip install beautifulsoup4
 - Used for parsing through HTML or XML.
+
+pip install pandas
+- Used for writing to a csv file.
+
