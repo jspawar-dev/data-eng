@@ -1,60 +1,62 @@
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 
 
 def request(url):
-    headers = ({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/122.0.0.0 Safari/537.36'})
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0'}
     response = requests.get(url, headers=headers)
-    print(response.status_code)
-    if response.status_code == 200:
-        html = response.text
-    else:
-        print(f"Failed to retrieve the page. Status code: {response.status_code}")
-
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(response.text, 'html.parser')
 
     return soup
 
 
 def parse(soup):
     books = soup.findAll('div', class_='sg-col-20-of-24 s-result-item s-asin sg-col-0-of-12 sg-col-16-of-20 sg-col s-widget-spacing-small sg-col-12-of-16')
-
+    print(len(books))
+    data = []
     for book in books:
-        title = book.findAll('span', class_='a-size-medium a-color-base a-text-normal')
-        price = book.findAll('span', class_='a-offscreen')
-        rating = book.findAll('span', class_='a-icon-alt')
-        link = book.find('a', class_='a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')[
-            'href']
-
+        item = {}
         try:
-            print(f'Title: {title[0].get_text()}')
-            print(f'Price: {price[0].get_text()}')
-            print(f'RRP: {price[1].get_text()}')
-            print(f'Ratings: {rating[0].get_text()}')
-            print(f'Link: https://www.amazon.co.uk/{link}')
-            print('\n')
-        except IndexError:
-            print('\n')
+            item['Title'] = book.find('span', class_='a-size-medium a-color-base a-text-normal').get_text().strip()
+            item['Price'] = book.find('span', class_='a-offscreen').get_text().strip()
+            item['Author'] = book.find('a', class_='a-size-base a-link-normal s-underline-text s-underline-link-text s-link-style').get_text().strip()
+            item['Rating'] = book.find('span', class_='a-icon-alt').get_text().strip()
+            item['Link'] = 'https://www.amazon.co.uk' + book.find('a',class_='a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')['href']
+        except AttributeError:
+            item['Rating'] = 'No Rating'
+        print(item)
+        data.append(item)
+
+    return data
 
 
 def pagination(soup):
     try:
-        next_page = \
-        soup.find('a', class_='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator')['href']
-        url = 'https://www.amazon.co.uk/' + next_page
+        next_page = soup.find('span', class_='s-pagination-strip')
+        url = 'https://www.amazon.co.uk/' + str(next_page.find('a', class_='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator')['href'])
         return url
-    except TypeError:
-        print('\n')
+    except (AttributeError, TypeError):
+        return
+
+
+def saveToCSV(data, mode):
+    df = pd.DataFrame(data)
+    df.to_csv('books.csv', mode=mode, index=False, header=False)
 
 
 def main():
-    url = 'https://www.amazon.co.uk/s?k=data+engineering+books&crid=1NKLYJG6MVL6T&sprefix=data+engineering+book%2Caps%2C60&ref=nb_sb_noss_1'
+    url = 'https://www.amazon.co.uk/s?k=data+engineering+books&crid=38DYM17O25O1K&sprefix=data+engineering+books%2Caps%2C118&ref=nb_sb_noss_1'
 
-    for i in range(20):
+    saveToCSV([], 'w')
+    while True:
         soup = request(url)
-        parse(soup)
+        data = parse(soup)
+        saveToCSV(data, 'a')
         url = pagination(soup)
+        if not url:
+            break
+        print(url)
+
 
 main()
