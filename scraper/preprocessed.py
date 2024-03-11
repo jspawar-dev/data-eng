@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 
-def request(url):
+def request(url): # This function sends a request to the url that is provided and returns a soup object with the web pages html.
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0'}
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -11,7 +11,7 @@ def request(url):
     return soup
 
 
-def parse(soup):
+def parse(soup): # This function finds every book on the web page and parses through and extracts the information. It returns the books in a list.
     books = soup.findAll('div', class_='sg-col-20-of-24 s-result-item s-asin sg-col-0-of-12 sg-col-16-of-20 sg-col s-widget-spacing-small sg-col-12-of-16')
     print(len(books))
     data = []
@@ -57,7 +57,7 @@ def parse(soup):
     return data
 
 
-def pagination(soup):
+def pagination(soup): # This function gets the next pages url. If there is no next page it returns none.
     try:
         next_page = soup.find('span', class_='s-pagination-strip')
         url = 'https://www.amazon.co.uk/' + str(next_page.find('a', class_='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator')['href'])
@@ -66,12 +66,12 @@ def pagination(soup):
         return
 
 
-def saveToCSV(data, mode):
+def saveToCSV(data, mode): # This function takes the books and uses pandas to write it to a csv file.
     df = pd.DataFrame(data)
     df.to_csv('books.csv', mode=mode, index=False, header=False)
 
 
-def main():
+def main(): # This is the main function it is given an initial url, wipes the csv file if it already exits. It then infinitely runs the functions until the pagination function returns none.
     url = 'https://www.amazon.co.uk/s?k=data+engineering+books&crid=38DYM17O25O1K&sprefix=data+engineering+books%2Caps%2C118&ref=nb_sb_noss_1'
 
     saveToCSV([], 'w')
