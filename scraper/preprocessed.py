@@ -45,11 +45,11 @@ def parse(soup): # This function finds every book on the web page and parses thr
             else:
                 item['Rating'] = 'No Rating'
 
-            # link = book.find('a', class_='a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')['href']
-            # if link:
-            #     item['Link'] = 'https://www.amazon.co.uk' + link
-            # else:
-            #     item['Link'] = 'No Link'
+            link = book.find('a', class_='a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')['href']
+            if link:
+                item['Link'] = 'https://www.amazon.co.uk' + link
+            else:
+                item['Link'] = 'No Link'
         except AttributeError:
             continue
 
@@ -72,7 +72,6 @@ def saveToCSV(data, mode): # This function takes the books and uses pandas to wr
     df.to_csv('books.csv', mode=mode, index=False, header=False)
 
 
-
 def saveToPostgres():
     conn = psycopg2.connect('host=127.0.0.1 dbname=postgres user=postgres password=1234')
     conn.set_session(autocommit=True)
@@ -87,7 +86,7 @@ def saveToPostgres():
 
     cur.execute('''CREATE TABLE IF NOT EXISTS books (Title text, Price float, Author text, Rating text)''')
     amazon = pd.read_csv('books.csv', encoding='utf-8')
-    amazon_insert = '''INSERT INTO books (Title, Price, Author, Rating) VALUES (%s, %s, %s, %s)'''
+    amazon_insert = '''INSERT INTO books (Title, Price, Author, Rating, Link) VALUES (%s, %s, %s, %s, %s)'''
     for i, row in amazon.iterrows():
         cur.execute(amazon_insert, list(row))
     conn.commit()
