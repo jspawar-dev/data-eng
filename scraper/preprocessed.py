@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import psycopg2
 
 
 def request(url): # This function sends a request to the url that is provided and returns a soup object with the web pages html.
@@ -21,13 +22,13 @@ def parse(soup): # This function finds every book on the web page and parses thr
 
             title = book.find('span', class_='a-size-medium a-color-base a-text-normal')
             if title:
-                item['Title'] = title.text.strip()
+                item['Title'] = title.text.strip().replace('′', '')
             else:
                 continue
 
             price = book.find('span', class_='a-offscreen')
             if price and price.text.strip() != '£0.00':
-                item['Price'] = price.text.strip()
+                item['Price'] = price.text.strip().replace('£', '')
             else:
                 continue
 
@@ -44,11 +45,11 @@ def parse(soup): # This function finds every book on the web page and parses thr
             else:
                 item['Rating'] = 'No Rating'
 
-            link = book.find('a', class_='a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')['href']
-            if link:
-                item['Link'] = 'https://www.amazon.co.uk' + link
-            else:
-                item['Link'] = 'No Link'
+            # link = book.find('a', class_='a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')['href']
+            # if link:
+            #     item['Link'] = 'https://www.amazon.co.uk' + link
+            # else:
+            #     item['Link'] = 'No Link'
         except AttributeError:
             continue
 
@@ -71,6 +72,28 @@ def saveToCSV(data, mode): # This function takes the books and uses pandas to wr
     df.to_csv('books.csv', mode=mode, index=False, header=False)
 
 
+
+def saveToPostgres():
+    conn = psycopg2.connect('host=127.0.0.1 dbname=postgres user=postgres password=1234')
+    conn.set_session(autocommit=True)
+    cur = conn.cursor()
+
+    cur.execute('''DROP DATABASE IF EXISTS amazon''')
+    cur.execute('''CREATE DATABASE amazon''')
+    conn.close()
+
+    conn = psycopg2.connect('host=127.0.0.1 dbname=amazon user=postgres password=1234')
+    cur = conn.cursor()
+
+    cur.execute('''CREATE TABLE IF NOT EXISTS books (Title text, Price float, Author text, Rating text)''')
+    amazon = pd.read_csv('books.csv', encoding='utf-8')
+    amazon_insert = '''INSERT INTO books (Title, Price, Author, Rating) VALUES (%s, %s, %s, %s)'''
+    for i, row in amazon.iterrows():
+        cur.execute(amazon_insert, list(row))
+    conn.commit()
+    conn.close()
+
+
 def main(): # This is the main function it is given an initial url, wipes the csv file if it already exits. It then infinitely runs the functions until the pagination function returns none.
     url = 'https://www.amazon.co.uk/s?k=data+engineering+books&crid=38DYM17O25O1K&sprefix=data+engineering+books%2Caps%2C118&ref=nb_sb_noss_1'
 
@@ -82,7 +105,12 @@ def main(): # This is the main function it is given an initial url, wipes the cs
         url = pagination(soup)
         if not url:
             break
-        print(url)
+
+    df = pd.read_csv('books.csv')
+    df.drop_duplicates(subset=None, inplace=True)
+    df.to_csv('books.csv', mode='w', index=False)
+
+    saveToPostgres()
 
 
 main()
