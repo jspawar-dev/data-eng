@@ -9,3 +9,6 @@ pip install beautifulsoup4
 pip install pandas
 - Used for writing to a csv file.
 
+pip install psycopg2
+- Used for connecting to a database.
+
