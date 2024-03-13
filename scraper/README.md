@@ -12,3 +12,7 @@ pip install pandas
 pip install psycopg2
 - Used for connecting to a database.
 
+Install PostgreSQL on your machine.
+Login Password used is '1234', adjust code to establish a connection if your password is different.
+
+\c amazon - connects to the amazon database
