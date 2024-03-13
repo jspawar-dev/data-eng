@@ -4,22 +4,21 @@ import pandas as pd
 import psycopg2
 
 
-def request(url): # This function sends a request to the url that is provided and returns a soup object with the web pages html.
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0'}
-    response = requests.get(url, headers=headers)
+def request(url, session):  # This function sends a request to the url that is provided and returns a soup object with the web pages html.
+    response = session.get(url)
+    print(response.status_code)
     soup = BeautifulSoup(response.text, 'html.parser')
-
     return soup
 
 
-def parse(soup): # This function finds every book on the web page and parses through and extracts the information. It returns the books in a list.
+def parse(soup):  # This function finds every book on the web page and parses through and extracts the information. It returns the books in a list.
+
     books = soup.findAll('div', class_='sg-col-20-of-24 s-result-item s-asin sg-col-0-of-12 sg-col-16-of-20 sg-col s-widget-spacing-small sg-col-12-of-16')
     print(len(books))
     data = []
     for book in books:
         item = {}
         try:
-
             title = book.find('span', class_='a-size-medium a-color-base a-text-normal')
             if title:
                 item['Title'] = title.text.strip().replace('′', '')
@@ -58,16 +57,22 @@ def parse(soup): # This function finds every book on the web page and parses thr
     return data
 
 
-def pagination(soup): # This function gets the next pages url. If there is no next page it returns none.
-    try:
-        next_page = soup.find('span', class_='s-pagination-strip')
-        url = 'https://www.amazon.co.uk/' + str(next_page.find('a', class_='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator')['href'])
-        return url
-    except (AttributeError, TypeError):
+def pagination(soup):  # This function gets the next pages url. If there is no next page it returns none
+
+    page = soup.find('span', class_='s-pagination-strip')
+
+    if page and not page.find('span', class_='s-pagination-item s-pagination-next s-pagination-disabled'):
+        next_page = page.find('a', class_='s-pagination-item s-pagination-next s-pagination-button s-pagination-button-accessibility s-pagination-separator')
+        if next_page:
+            url = 'https://www.amazon.co.uk' + next_page.get('href')
+            return url
+        else:
+            return
+    else:
         return
 
 
-def saveToCSV(data, mode): # This function takes the books and uses pandas to write it to a csv file.
+def saveToCSV(data, mode):  # This function takes the books and uses pandas to write it to a csv file.
     df = pd.DataFrame(data)
     df.to_csv('books.csv', mode=mode, index=False, header=False)
 
@@ -84,26 +89,32 @@ def saveToPostgres():
     conn = psycopg2.connect('host=127.0.0.1 dbname=amazon user=postgres password=1234')
     cur = conn.cursor()
 
-    cur.execute('''CREATE TABLE IF NOT EXISTS books (Title text, Price float, Author text, Rating text)''')
-    amazon = pd.read_csv('books.csv', encoding='utf-8')
+    cur.execute('''CREATE TABLE IF NOT EXISTS books (Title varchar, Price float, Author varchar, Rating varchar, Link text)''')
+    amazon = pd.read_csv('books.csv')
     amazon_insert = '''INSERT INTO books (Title, Price, Author, Rating, Link) VALUES (%s, %s, %s, %s, %s)'''
+
     for i, row in amazon.iterrows():
         cur.execute(amazon_insert, list(row))
     conn.commit()
     conn.close()
 
 
-def main(): # This is the main function it is given an initial url, wipes the csv file if it already exits. It then infinitely runs the functions until the pagination function returns none.
+def main():  # This is the main function it is given an initial url, wipes the csv file if it already exits. It then infinitely runs the functions until the pagination function returns none.
     url = 'https://www.amazon.co.uk/s?k=data+engineering+books&crid=38DYM17O25O1K&sprefix=data+engineering+books%2Caps%2C118&ref=nb_sb_noss_1'
+
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0'}
+    session = requests.Session()
+    session.headers.update(headers)
 
     saveToCSV([], 'w')
     while True:
-        soup = request(url)
+        soup = request(url, session)
         data = parse(soup)
         saveToCSV(data, 'a')
         url = pagination(soup)
         if not url:
             break
+        print(url)
 
     df = pd.read_csv('books.csv')
     df.drop_duplicates(subset=None, inplace=True)
