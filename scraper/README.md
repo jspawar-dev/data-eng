@@ -1,8 +1,18 @@
 # Imports
 
-![image](https://github.com/AmxnP/data-eng/assets/98857256/8c5fbe5a-8c60-4ffd-a1c1-ca3ae2192a2d)
+```
+pip install requests
+# Allows us to send HTTP requests
 
+pip install beautifulsoup4
+# Used for parsing HTML or XML to extract data.
 
+pip install pandas
+# Used for storing data to a .csv file
+
+pip install psycopg2
+# Used for storing data to a database.
+```
 
 # Files
 
