@@ -5,8 +5,11 @@
 The Coursework meets the following Learning Outcome:
 
   • Gather data by web scrapping using Beautiful Soup.
+  
   • Upload CSV Data to PostgreSQL Database.
+  
   • Use SQL query on the data stored in PostgreSQL Database.
+  
   • Data ingestion using NiFi.
 
 ## Learning Outcomes
@@ -14,9 +17,13 @@ The Coursework meets the following Learning Outcome:
 This project fulfilled the following key learning outcomes:
 
   • **Web Scraping:** Successfully scraped data from Amazon using Beautiful Soup.
+  
   • **Database Management:** Uploaded and managed CSV data within a PostgreSQL database.
+  
   • **SQL Queries:** Utilized SQL queries to extract and analyze the stored data.
+  
   • **Data Ingestion with NiFi:** Implemented a data ingestion pipeline for handling data processing.
+  
 
 
 ## Preview
