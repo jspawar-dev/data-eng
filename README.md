@@ -1,7 +1,5 @@
 # Data-Engineering
 
-**Data Engineering Coursework 1**
-
 ## Learning Outcomes
 
 This project fulfilled the following key learning outcomes:
